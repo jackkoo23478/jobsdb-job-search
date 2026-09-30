@@ -1,0 +1,28 @@
+name: Daily JobsDB AI Job Search
+
+on:
+  schedule:
+    - cron: "0 10 * * *"   # 10:00 UTC = 18:00 Hong Kong time
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: "Dry run: show results only, do not write to Notion"
+        type: boolean
+        default: true
+
+jobs:
+  run:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: pip install -r requirements.txt
+      - name: Search JobsDB and update Notion
+        run: python job_search.py
+        env:
+          APIFY_TOKEN: ${{ secrets.APIFY_TOKEN }}
+          NOTION_TOKEN: ${{ secrets.NOTION_TOKEN }}
+          DRY_RUN: ${{ github.event_name == 'workflow_dispatch' && inputs.dry_run || 'false' }}

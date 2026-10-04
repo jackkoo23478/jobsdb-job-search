@@ -2,7 +2,10 @@ name: Daily JobsDB AI Job Search
 
 on:
   schedule:
-    - cron: "0 10 * * *"   # 10:00 UTC = 18:00 Hong Kong time
+    # GitHub may delay or skip scheduled runs at busy times (especially on the hour),
+    # so run off the hour and add a backup. The backup skips if today already ran.
+    - cron: "17 10 * * *"  # 18:17 Hong Kong time
+    - cron: "47 11 * * *"  # 19:47 Hong Kong time (backup)
   workflow_dispatch:
     inputs:
       dry_run:
@@ -26,3 +29,4 @@ jobs:
           APIFY_TOKEN: ${{ secrets.APIFY_TOKEN }}
           NOTION_TOKEN: ${{ secrets.NOTION_TOKEN }}
           DRY_RUN: ${{ github.event_name == 'workflow_dispatch' && inputs.dry_run || 'false' }}
+          SKIP_IF_DONE: ${{ github.event_name == 'schedule' }}

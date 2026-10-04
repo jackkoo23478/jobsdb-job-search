@@ -20,6 +20,8 @@ NOTION_TOKEN = os.environ.get("NOTION_TOKEN", "")
 TRACKER_DB = os.environ.get("TRACKER_DB_ID", "394f380e4baf4e8ca6990c3ca0577f5d")
 RUNLOG_DB = os.environ.get("RUNLOG_DB_ID", "0633fbdad51f47e687376ae221c2b2bb")
 DRY_RUN = os.environ.get("DRY_RUN", "false").strip().lower() == "true"
+# Scheduled runs set this so the backup schedule does nothing if today already ran.
+SKIP_IF_DONE = os.environ.get("SKIP_IF_DONE", "false").strip().lower() == "true"
 ACTOR_ID = "wP8VELMmEJgeP0ae1"  # blackfalcondata/jobsdb-scraper
 
 SCRAPER_INPUT = {
@@ -170,6 +172,13 @@ def add_job(job: dict) -> None:
     notion("POST", "pages", {"parent": {"database_id": TRACKER_DB}, "properties": props})
 
 
+def already_ran_today() -> bool:
+    today = dt.datetime.now(HKT).date().isoformat()
+    res = notion("POST", f"databases/{RUNLOG_DB}/query",
+                 {"page_size": 1, "filter": {"property": "Run Date", "date": {"equals": today}}})
+    return bool(res.get("results"))
+
+
 def log_run(scraped: int, fits: int, added: int, note: str) -> None:
     today = dt.datetime.now(HKT).date().isoformat()
     title = f"{today} ✅ 新增 {added} 份" if added else f"{today} 📭 冇新職位"
@@ -191,7 +200,10 @@ def main() -> int:
     if missing:
         print(f"Missing secrets: {', '.join(missing)}")
         return 1
-    print(f"DRY_RUN={DRY_RUN}  stateKey={SCRAPER_INPUT['stateKey']}")
+    print(f"DRY_RUN={DRY_RUN}  SKIP_IF_DONE={SKIP_IF_DONE}  stateKey={SCRAPER_INPUT['stateKey']}")
+    if SKIP_IF_DONE and not DRY_RUN and already_ran_today():
+        print("Already ran today (found in Job Search Run Log). Skipping.")
+        return 0
 
     try:
         raw = fetch_jobs()

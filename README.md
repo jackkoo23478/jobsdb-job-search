@@ -3,7 +3,7 @@
 Every day at 18:00 Hong Kong time, GitHub Actions:
 
 1. Runs the Apify **JobsDB Scraper** for new Hong Kong jobs (AI engineer, RAG, LLM engineer, machine learning engineer, AI developer) posted in the last 7 days.
-2. Scores each job by skill keywords (RAG, LLM, Python, FastAPI, LangChain, React, vector DB, agents, NLP…). Senior / lead / manager roles are scored low.
+2. Scores each job by whole-word skill keywords (RAG, LLM, GenAI, Python, FastAPI, LangChain, React, vector DB, embeddings, agents, NLP, prompting, Ollama, n8n, SQL, Docker…): 5+ hits = high, 3–4 = medium. Senior / lead / manager roles are scored low.
 3. Skips jobs already in Notion (same company + title + posted date).
 4. Adds new medium/high-fit jobs to the **AI Engineer Job Tracker** database in Notion.
 5. Writes one row per run to the **Job Search Run Log** database, including days with no new jobs.

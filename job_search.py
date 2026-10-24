@@ -25,7 +25,8 @@ SKIP_IF_DONE = os.environ.get("SKIP_IF_DONE", "false").strip().lower() == "true"
 ACTOR_ID = "wP8VELMmEJgeP0ae1"  # blackfalcondata/jobsdb-scraper
 
 SCRAPER_INPUT = {
-    "query": '["AI engineer", "RAG", "LLM engineer", "machine learning engineer", "AI developer"]',
+    "query": '["AI engineer", "RAG", "LLM engineer", "machine learning engineer", "AI developer", '
+             '"Generative AI", "Data Engineer"]',
     "country": "HK",
     "dateRange": "7",
     "sortMode": "date",
@@ -42,9 +43,31 @@ SCRAPER_INPUT = {
     "skipReposts": True,
 }
 
-SKILLS = ["rag", "llm", "python", "fastapi", "langchain", "machine learning",
-          "next.js", "react", "vector", "openai", "agent", "nlp"]
-SENIOR = re.compile(r"senior|lead|manager|principal|head|director|architect", re.I)
+# Skill name -> whole-word pattern. \b stops false hits such as "rag" in "storage",
+# "agent" in "agency" or "react" in "reactive".
+SKILLS = {
+    "rag": r"\brag\b|retrieval[- ]augmented",
+    "llm": r"\bllms?\b|large language model",
+    "genai": r"\bgen ?ai\b|generative ai",
+    "python": r"\bpython\b",
+    "fastapi": r"\bfastapi\b",
+    "langchain": r"\blangchain\b",
+    "machine learning": r"\bmachine learning\b",
+    "next.js": r"\bnext\.?js\b",
+    "react": r"\breact(\.?js)?\b",
+    "vector": r"\bvector\b",
+    "embedding": r"\bembeddings?\b",
+    "openai": r"\bopenai\b",
+    "agent": r"\bagents?\b|\bagentic\b",
+    "nlp": r"\bnlp\b",
+    "prompt": r"\bprompt",
+    "ollama": r"\bollama\b",
+    "n8n": r"\bn8n\b",
+    "sql": r"\bsql\b",
+    "docker": r"\bdocker\b",
+}
+SKILL_RES = {name: re.compile(pat, re.I) for name, pat in SKILLS.items()}
+SENIOR = re.compile(r"\b(senior|sr\.?|lead|manager|principal|head|director|architect)\b", re.I)
 
 NOTION_HEADERS = {
     "Authorization": f"Bearer {NOTION_TOKEN}",
@@ -94,12 +117,12 @@ def fetch_jobs() -> list[dict]:
 def shape(job: dict) -> dict:
     title = job.get("title") or "Untitled"
     body = f"{title} {job.get('description') or job.get('teaser') or ''}".lower()
-    hits = [k for k in SKILLS if k in body]
+    hits = [name for name, rx in SKILL_RES.items() if rx.search(body)]
     if SENIOR.search(title):
         fit = "低"
-    elif len(hits) >= 4:
+    elif len(hits) >= 5:
         fit = "高"
-    elif len(hits) >= 2:
+    elif len(hits) >= 3:
         fit = "中"
     else:
         fit = "低"
